@@ -1,0 +1,338 @@
+# download library: pip install limelightlib-python numpy gpiozero
+
+import time
+from enum import Enum
+
+import limelight
+
+# =========================
+# USER SETTINGS
+# =========================
+
+LIMELIGHT_IP = "192.168.1.50"   # replace with your Limelight IP
+
+PIPE_STOP = 0
+PIPE_CONE = 1
+PIPE_LANE = 2
+
+BASE_SPEED = 0.35
+MAX_CMD = 1.0
+
+LANE_KP = 0.025
+CONE_KP = 0.020
+
+STOP_MIN_AREA = 6.0
+CONE_MIN_AREA = 1.0
+LANE_MIN_AREA = 0.2
+
+STOP_HOLD_SECONDS = 3.0
+PIPELINE_SETTLE_TIME = 0.10
+
+SCAN_INTERVAL_STOP = 0.20
+SCAN_INTERVAL_CONE = 0.15
+
+
+class RobotState(Enum):
+    LANE_FOLLOW = 1
+    AVOID_CONE = 2
+    STOP_WAIT = 3
+
+
+# =========================
+# MOTOR DRIVER STUBS
+# Replace with your real code
+# =========================
+
+def clamp(value, low, high):
+    return max(low, min(high, value))
+
+
+def set_motor_speeds(left, right):
+    left = clamp(left, -MAX_CMD, MAX_CMD)
+    right = clamp(right, -MAX_CMD, MAX_CMD)
+
+    # Replace this with actual Raspberry Pi motor control code
+    print(f"LEFT={left:.2f}, RIGHT={right:.2f}")
+
+
+def stop_motors():
+    set_motor_speeds(0.0, 0.0)
+
+
+# =========================
+# LIMELIGHT SETUP
+# =========================
+
+ll = limelight.Limelight(LIMELIGHT_IP)
+
+
+def safe_get_results():
+    """
+    Wrapper so the main loop doesn't crash if comms fail.
+    """
+    try:
+        return ll.get_results()
+    except Exception as e:
+        print("Limelight get_results() failed:", e)
+        return None
+
+
+def safe_get_status():
+    try:
+        return ll.get_status()
+    except Exception as e:
+        print("Limelight get_status() failed:", e)
+        return None
+
+
+def switch_pipeline(index):
+    """
+    Method name can vary slightly by library revision.
+    If your installed version differs, inspect dir(ll).
+    """
+    try:
+        # Common/intended style for Limelight libs
+        ll.pipeline_switch(index)
+    except AttributeError:
+        try:
+            ll.set_pipeline_index(index)
+        except AttributeError:
+            raise RuntimeError(
+                "Could not find pipeline switch method. "
+                "Run: print(dir(ll)) and check the installed limelightlib-python API."
+            )
+
+
+def ensure_pipeline(index, current_pipeline):
+    if current_pipeline != index:
+        switch_pipeline(index)
+        time.sleep(PIPELINE_SETTLE_TIME)
+        return index
+    return current_pipeline
+
+
+# =========================
+# RESULT PARSING HELPERS
+# =========================
+
+def result_is_valid(results):
+    """
+    JSON spec says 'v' is 1 when valid targets exist.
+    """
+    if results is None:
+        return False
+
+    if isinstance(results, dict):
+        return results.get("v", 0) == 1
+
+    # If library returns an object instead of raw dict
+    if hasattr(results, "valid"):
+        return bool(results.valid)
+    if hasattr(results, "v"):
+        return int(results.v) == 1
+
+    return False
+
+
+def get_tx(results):
+    if results is None:
+        return 0.0
+
+    if isinstance(results, dict):
+        return float(results.get("tx", 0.0))
+
+    if hasattr(results, "tx"):
+        return float(results.tx)
+
+    return 0.0
+
+
+def get_ta(results):
+    if results is None:
+        return 0.0
+
+    if isinstance(results, dict):
+        return float(results.get("ta", 0.0))
+
+    if hasattr(results, "ta"):
+        return float(results.ta)
+
+    return 0.0
+
+
+def get_primary_detector_class(results):
+    """
+    NetworkTables docs mention tdclass for detector class.
+    JSON structure may vary, so we try a few possibilities.
+    """
+    if results is None:
+        return ""
+
+    if isinstance(results, dict):
+        if "tdclass" in results:
+            return str(results.get("tdclass", "")).lower()
+
+        # Common possible detector-array keys
+        detector_arrays = [
+            results.get("Detector"),
+            results.get("detectorResults"),
+            results.get("targets_Detector"),
+        ]
+
+        for arr in detector_arrays:
+            if isinstance(arr, list) and len(arr) > 0:
+                label = arr[0].get("class", "") or arr[0].get("className", "")
+                return str(label).lower()
+
+    return ""
+
+
+def get_active_pipeline():
+    """
+    Status API includes pipeline index according to docs.
+    """
+    status = safe_get_status()
+    if status is None:
+        return None
+
+    if isinstance(status, dict):
+        # docs refer to status containing pipeline index
+        for key in ("pipelineIndex", "getpipe", "pID"):
+            if key in status:
+                return status[key]
+
+    return None
+
+
+# =========================
+# DETECTION LOGIC
+# =========================
+
+def stop_sign_detected(results):
+    if not result_is_valid(results):
+        return False
+    if get_ta(results) < STOP_MIN_AREA:
+        return False
+
+    cls = get_primary_detector_class(results)
+    return "stop" in cls
+
+
+def cone_detected(results):
+    if not result_is_valid(results):
+        return False
+    if get_ta(results) < CONE_MIN_AREA:
+        return False
+
+    cls = get_primary_detector_class(results)
+    return "cone" in cls
+
+
+def lane_visible(results):
+    return result_is_valid(results) and get_ta(results) >= LANE_MIN_AREA
+
+
+# =========================
+# BEHAVIOR FUNCTIONS
+# =========================
+
+def run_lane_follow(results):
+    tx = get_tx(results)
+    steering = LANE_KP * tx
+
+    left = BASE_SPEED - steering
+    right = BASE_SPEED + steering
+    set_motor_speeds(left, right)
+
+
+def run_cone_avoid(results):
+    tx = get_tx(results)
+
+    # If cone is on one side, steer away from it
+    steering = CONE_KP * tx
+
+    left = BASE_SPEED + steering
+    right = BASE_SPEED - steering
+    set_motor_speeds(left, right)
+
+
+# =========================
+# MAIN LOOP
+# =========================
+
+def main():
+    current_pipeline = None
+    state = RobotState.LANE_FOLLOW
+    stop_release_time = 0.0
+
+    last_stop_scan = 0.0
+    last_cone_scan = 0.0
+
+    current_pipeline = ensure_pipeline(PIPE_LANE, current_pipeline)
+
+    while True:
+        now = time.time()
+
+        if state == RobotState.STOP_WAIT:
+            stop_motors()
+            if now >= stop_release_time:
+                state = RobotState.LANE_FOLLOW
+                current_pipeline = ensure_pipeline(PIPE_LANE, current_pipeline)
+            time.sleep(0.02)
+            continue
+
+        # ---- stop sign check ----
+        if now - last_stop_scan >= SCAN_INTERVAL_STOP:
+            current_pipeline = ensure_pipeline(PIPE_STOP, current_pipeline)
+            results = safe_get_results()
+
+            if stop_sign_detected(results):
+                print("Stop sign detected -> stopping")
+                stop_motors()
+                stop_release_time = time.time() + STOP_HOLD_SECONDS
+                state = RobotState.STOP_WAIT
+                time.sleep(0.02)
+                continue
+
+            last_stop_scan = now
+
+        # ---- cone check ----
+        if now - last_cone_scan >= SCAN_INTERVAL_CONE:
+            current_pipeline = ensure_pipeline(PIPE_CONE, current_pipeline)
+            results = safe_get_results()
+
+            if cone_detected(results):
+                print("Cone detected -> avoiding")
+                state = RobotState.AVOID_CONE
+            else:
+                last_cone_scan = now
+
+        # ---- cone avoidance ----
+        if state == RobotState.AVOID_CONE:
+            current_pipeline = ensure_pipeline(PIPE_CONE, current_pipeline)
+            results = safe_get_results()
+
+            if cone_detected(results):
+                run_cone_avoid(results)
+                time.sleep(0.02)
+                continue
+            else:
+                state = RobotState.LANE_FOLLOW
+                current_pipeline = ensure_pipeline(PIPE_LANE, current_pipeline)
+
+        # ---- default lane follow ----
+        if state == RobotState.LANE_FOLLOW:
+            current_pipeline = ensure_pipeline(PIPE_LANE, current_pipeline)
+            results = safe_get_results()
+
+            if lane_visible(results):
+                run_lane_follow(results)
+            else:
+                print("Lane lost -> stopping")
+                stop_motors()
+
+        time.sleep(0.02)
+
+
+if __name__ == "__main__":
+    main()
