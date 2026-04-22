@@ -1,8 +1,8 @@
-igvc@IGVC:~/sick_scan_ws$ ros2 launch limelight_perception bringup.launch.py
-[INFO] [launch]: All log files can be found below /home/igvc/.ros/log/2026-04-22-17-18-21-930336-IGVC-8704
+(11_venv) igvc@IGVC:~/sick_scan_ws$ ros2 launch limelight_perception bringup.launch.py
+[INFO] [launch]: All log files can be found below /home/igvc/.ros/log/2026-04-22-17-42-22-129354-IGVC-9741
 [INFO] [launch]: Default logging verbosity is set to INFO
 [WARNING] [launch_ros.actions.node]: Parameter file path is not a file: config/params.yaml
-[INFO] [limelight_publisher-1]: process started with pid [8707]
+[INFO] [limelight_publisher-1]: process started with pid [9744]
 [limelight_publisher-1] Traceback (most recent call last):
 [limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher", line 33, in <module>
 [limelight_publisher-1]     sys.exit(load_entry_point('limelight-perception==0.0.1', 'console_scripts', 'limelight_publisher')())
@@ -25,4 +25,4 @@ igvc@IGVC:~/sick_scan_ws$ ros2 launch limelight_perception bringup.launch.py
 [limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/python3.12/site-packages/limelight_perception/limelight_publisher.py", line 10, in <module>
 [limelight_publisher-1]     import limelight
 [limelight_publisher-1] ModuleNotFoundError: No module named 'limelight'
-[ERROR] [limelight_publisher-1]: process has died [pid 8707, exit code 1, cmd '/home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher --ros-args -r __node:=limelight_publisher'].
+[ERROR] [limelight_publisher-1]: process has died [pid 9744, exit code 1, cmd '/home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher --ros-args -r __node:=limelight_publisher'].
