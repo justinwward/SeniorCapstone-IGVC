@@ -1,0 +1,23 @@
+(11_venv) igvc@IGVC:~/sick_scan_ws$ cat ~/sick_scan_ws/install/limelight_perception/share/limelight_perception/launch/bringup.launch.py
+from launch import LaunchDescription
+from launch.substitutions import PathJoinSubstitution
+from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+
+
+def generate_launch_description():
+    params_file = PathJoinSubstitution([
+        FindPackageShare('limelight_perception'),
+        'config',
+        'params.yaml'
+    ])
+
+    return LaunchDescription([
+        Node(
+            package='limelight_perception',
+            executable='limelight_publisher',
+            name='limelight_publisher',
+            output='screen',
+            parameters=[params_file],
+        ),
+    ])
