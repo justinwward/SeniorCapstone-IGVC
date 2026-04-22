@@ -1,0 +1,12 @@
+limelight_publisher:
+  ros__parameters:
+    limelight_ip: "192.168.1.50"
+    pipe_stop: 0
+    pipe_cone: 1
+    pipe_lane: 2
+    stop_min_area: 6.0
+    cone_min_area: 1.0
+    lane_min_area: 0.2
+    pipeline_settle_time: 0.10
+    stop_scan_interval: 0.20
+    cone_scan_interval: 0.15
