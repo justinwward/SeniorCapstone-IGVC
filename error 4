@@ -1,0 +1,90 @@
+(11_venv) igvc@IGVC:~/sick_scan_ws$ python3 -c "import sys; print(sys.executable)"
+/home/igvc/11_venv/bin/python3
+(11_venv) igvc@IGVC:~/sick_scan_ws$ python3 -c "import sys; print('\n'.join(sys.path))"
+
+/home/igvc/sick_scan_ws/install/sick_scan_xd/lib/python3.12/site-packages
+/home/igvc/sick_scan_ws/install/robot_bringup/lib/python3.12/site-packages
+/home/igvc/sick_scan_ws/build/motor_control
+/home/igvc/sick_scan_ws/install/motor_control/lib/python3.12/site-packages
+/home/igvc/sick_scan_ws/install/limelight_perception/lib/python3.12/site-packages
+/opt/ros/jazzy/lib/python3.12/site-packages
+/usr/lib/python312.zip
+/usr/lib/python3.12
+/usr/lib/python3.12/lib-dynload
+/home/igvc/11_venv/lib/python3.12/site-packages
+(11_venv) igvc@IGVC:~/sick_scan_ws$ head -n 1 /home/igvc/sick_scan_ws/install/limelight-perception/lib/limelight_perception/limelight_publisher
+head: cannot open '/home/igvc/sick_scan_ws/install/limelight-perception/lib/limelight_perception/limelight_publisher' for reading: No such file or directory
+(11_venv) igvc@IGVC:~/sick_scan_ws$ head -n 1 /home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher
+#!/usr/bin/python3
+(11_venv) igvc@IGVC:~/sick_scan_ws$ python3 -c "import limelight; print('OK', limelight.__file__)"
+OK /home/igvc/11_venv/lib/python3.12/site-packages/limelight.py
+(11_venv) igvc@IGVC:~/sick_scan_ws$ /usr/bin/python3 -c "import sys; print(sys.executable)"
+/usr/bin/python3
+(11_venv) igvc@IGVC:~/sick_scan_ws$ /usr/bin/python3 -c "import limelight; print('OK', limelight.__file__)"
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'limelight'
+(11_venv) igvc@IGVC:~/sick_scan_ws$ python3 -m pip show limelightlib-python
+Name: limelightlib-python
+Version: 0.9.6
+Summary: Built to interface with any Limelight Smart Camera
+Home-page: https://limelightvision.io
+Author: Brandon Hjelstrom
+Author-email: brandon@limelightvision.io
+License: 
+Location: /home/igvc/11_venv/lib/python3.12/site-packages
+Requires: ifaddr, requests, websocket-client
+Required-by: 
+(11_venv) igvc@IGVC:~/sick_scan_ws$ /usr/bin/python3 -m pip show limelightlib-python
+WARNING: Package(s) not found: limelightlib-python
+(11_venv) igvc@IGVC:~/sick_scan_ws$ /usr/bin/python3 -m pip install --user --break-system-package limelightlib-python
+Collecting limelightlib-python
+  Using cached limelightlib_python-0.9.6-py3-none-any.whl.metadata (2.5 kB)
+Collecting websocket-client>=1.5 (from limelightlib-python)
+  Using cached websocket_client-1.9.0-py3-none-any.whl.metadata (8.3 kB)
+Requirement already satisfied: requests in /usr/lib/python3/dist-packages (from limelightlib-python) (2.31.0)
+Collecting ifaddr (from limelightlib-python)
+  Using cached ifaddr-0.2.0-py3-none-any.whl.metadata (4.9 kB)
+Using cached limelightlib_python-0.9.6-py3-none-any.whl (5.4 kB)
+Using cached websocket_client-1.9.0-py3-none-any.whl (82 kB)
+Using cached ifaddr-0.2.0-py3-none-any.whl (12 kB)
+Installing collected packages: ifaddr, websocket-client, limelightlib-python
+  WARNING: The script wsdump is installed in '/home/igvc/.local/bin' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+Successfully installed ifaddr-0.2.0 limelightlib-python-0.9.6 websocket-client-1.9.0
+(11_venv) igvc@IGVC:~/sick_scan_ws$ /usr/bin/python3 -c "import limelight; print('OK', limelight.__file__)"
+OK /home/igvc/.local/lib/python3.12/site-packages/limelight.py
+(11_venv) igvc@IGVC:~/sick_scan_ws$ cd ~/sick_scan_ws
+(11_venv) igvc@IGVC:~/sick_scan_ws$ colcon build --packages-select limelight_perception
+Starting >>> limelight_perception
+Finished <<< limelight_perception [2.00s]          
+
+Summary: 1 package finished [2.23s]
+(11_venv) igvc@IGVC:~/sick_scan_ws$ source install/setup.bash
+(11_venv) igvc@IGVC:~/sick_scan_ws$ ros2 launch limelight_perception bringup.launch.py
+[INFO] [launch]: All log files can be found below /home/igvc/.ros/log/2026-04-22-18-52-29-635130-IGVC-11357
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [limelight_publisher-1]: process started with pid [11360]
+[limelight_publisher-1] Traceback (most recent call last):
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher", line 33, in <module>
+[limelight_publisher-1]     sys.exit(load_entry_point('limelight-perception==0.0.1', 'console_scripts', 'limelight_publisher')())
+[limelight_publisher-1]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher", line 25, in importlib_load_entry_point
+[limelight_publisher-1]     return next(matches).load()
+[limelight_publisher-1]            ^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3.12/importlib/metadata/__init__.py", line 205, in load
+[limelight_publisher-1]     module = import_module(match.group('module'))
+[limelight_publisher-1]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3.12/importlib/__init__.py", line 90, in import_module
+[limelight_publisher-1]     return _bootstrap._gcd_import(name[level:], package, level)
+[limelight_publisher-1]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "<frozen importlib._bootstrap>", line 1387, in _gcd_import
+[limelight_publisher-1]   File "<frozen importlib._bootstrap>", line 1360, in _find_and_load
+[limelight_publisher-1]   File "<frozen importlib._bootstrap>", line 1331, in _find_and_load_unlocked
+[limelight_publisher-1]   File "<frozen importlib._bootstrap>", line 935, in _load_unlocked
+[limelight_publisher-1]   File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+[limelight_publisher-1]   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/python3.12/site-packages/limelight_perception/limelight_publisher.py", line 11, in <module>
+[limelight_publisher-1]     from limelight.limelightresults import parse_results
+[limelight_publisher-1] ModuleNotFoundError: No module named 'limelight.limelightresults'; 'limelight' is not a package
+[ERROR] [limelight_publisher-1]: process has died [pid 11360, exit code 1, cmd '/home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher --ros-args -r __node:=limelight_publisher --params-file /home/igvc/sick_scan_ws/install/limelight_perception/share/limelight_perception/config/params.yaml'].
