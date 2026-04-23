@@ -8,7 +8,7 @@ from rclpy.node import Node
 from std_msgs.msg import Bool, Float32, Int32, String
 
 import limelight
-from limelight.limelightresults import parse_results
+import limelightresults
 
 
 class LimelightPublisher(Node):
@@ -74,7 +74,7 @@ class LimelightPublisher(Node):
     def get_results(self):
         try:
             raw = self.ll.get_results()
-            parsed = parse_results(raw)
+            parsed = parsed_result = limelightresults.parse_results(result)
             return parsed
         except Exception as e:
             self.get_logger().warn(f'Failed to read Limelight: {e}')
