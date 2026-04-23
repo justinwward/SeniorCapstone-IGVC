@@ -1,0 +1,109 @@
+igvc@IGVC:~/sick_scan_ws$ ros2 launch limelight_perception bringup.launch.py
+[INFO] [launch]: All log files can be found below /home/igvc/.ros/log/2026-04-23-17-08-10-810009-IGVC-3303
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [limelight_publisher-1]: process started with pid [3306]
+[limelight_publisher-1] [INFO] [1776978491.937693693] [limelight_publisher]: Limelight perception node started. IP=limelight.local
+[limelight_publisher-1] [INFO] [1776978491.938666405] [limelight_publisher]: Pipelines: stop=2, cone=0, lane=1
+[limelight_publisher-1] [INFO] [1776978491.966906706] [limelight_publisher]: Switched to pipeline 2
+[limelight_publisher-1] [INFO] [1776978492.163381731] [limelight_publisher]: Switched to pipeline 0
+[limelight_publisher-1] [INFO] [1776978492.365143021] [limelight_publisher]: Switched to pipeline 2
+[limelight_publisher-1] [WARN] [1776978497.515203435] [limelight_publisher]: Failed to read Limelight results: HTTPConnectionPool(host='limelight.local', port=5807): Max retries exceeded with url: /results (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0xffff892b7c80>: Failed to resolve 'limelight.local' ([Errno -2] Name or service not known)"))
+[limelight_publisher-1] Traceback (most recent call last):
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/urllib3/connection.py", line 203, in _new_conn
+[limelight_publisher-1]     sock = connection.create_connection(
+[limelight_publisher-1]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/urllib3/util/connection.py", line 60, in create_connection
+[limelight_publisher-1]     for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
+[limelight_publisher-1]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3.12/socket.py", line 963, in getaddrinfo
+[limelight_publisher-1]     for res in _socket.getaddrinfo(host, port, family, type, proto, flags):
+[limelight_publisher-1]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1] socket.gaierror: [Errno -2] Name or service not known
+[limelight_publisher-1] 
+[limelight_publisher-1] The above exception was the direct cause of the following exception:
+[limelight_publisher-1] 
+[limelight_publisher-1] Traceback (most recent call last):
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/urllib3/connectionpool.py", line 791, in urlopen
+[limelight_publisher-1]     response = self._make_request(
+[limelight_publisher-1]                ^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/urllib3/connectionpool.py", line 497, in _make_request
+[limelight_publisher-1]     conn.request(
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/urllib3/connection.py", line 395, in request
+[limelight_publisher-1]     self.endheaders()
+[limelight_publisher-1]   File "/usr/lib/python3.12/http/client.py", line 1351, in endheaders
+[limelight_publisher-1]     self._send_output(message_body, encode_chunked=encode_chunked)
+[limelight_publisher-1]   File "/usr/lib/python3.12/http/client.py", line 1111, in _send_output
+[limelight_publisher-1]     self.send(msg)
+[limelight_publisher-1]   File "/usr/lib/python3.12/http/client.py", line 1055, in send
+[limelight_publisher-1]     self.connect()
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/urllib3/connection.py", line 243, in connect
+[limelight_publisher-1]     self.sock = self._new_conn()
+[limelight_publisher-1]                 ^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/urllib3/connection.py", line 210, in _new_conn
+[limelight_publisher-1]     raise NameResolutionError(self.host, self, e) from e
+[limelight_publisher-1] urllib3.exceptions.NameResolutionError: <urllib3.connection.HTTPConnection object at 0xffff89339d30>: Failed to resolve 'limelight.local' ([Errno -2] Name or service not known)
+[limelight_publisher-1] 
+[limelight_publisher-1] The above exception was the direct cause of the following exception:
+[limelight_publisher-1] 
+[limelight_publisher-1] Traceback (most recent call last):
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/requests/adapters.py", line 486, in send
+[limelight_publisher-1]     resp = conn.urlopen(
+[limelight_publisher-1]            ^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/urllib3/connectionpool.py", line 845, in urlopen
+[limelight_publisher-1]     retries = retries.increment(
+[limelight_publisher-1]               ^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/urllib3/util/retry.py", line 517, in increment
+[limelight_publisher-1]     raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+[limelight_publisher-1]     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1] urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='limelight.local', port=5807): Max retries exceeded with url: /pipeline-switch?index=0 (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0xffff89339d30>: Failed to resolve 'limelight.local' ([Errno -2] Name or service not known)"))
+[limelight_publisher-1] 
+[limelight_publisher-1] During handling of the above exception, another exception occurred:
+[limelight_publisher-1] 
+[limelight_publisher-1] Traceback (most recent call last):
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher", line 33, in <module>
+[limelight_publisher-1]     sys.exit(load_entry_point('limelight-perception==0.0.1', 'console_scripts', 'limelight_publisher')())
+[limelight_publisher-1]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/python3.12/site-packages/limelight_perception/limelight_publisher.py", line 345, in main
+[limelight_publisher-1]     rclpy.spin(node)
+[limelight_publisher-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+[limelight_publisher-1]     executor.spin_once()
+[limelight_publisher-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 923, in spin_once
+[limelight_publisher-1]     self._spin_once_impl(timeout_sec)
+[limelight_publisher-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 915, in _spin_once_impl
+[limelight_publisher-1]     raise handler.exception()
+[limelight_publisher-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/task.py", line 286, in _execute_coroutine_step
+[limelight_publisher-1]     result = coro.send(None)
+[limelight_publisher-1]              ^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 592, in handler
+[limelight_publisher-1]     await call_coroutine()
+[limelight_publisher-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 454, in _execute
+[limelight_publisher-1]     await await_or_execute(tmr.callback)
+[limelight_publisher-1]   File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 115, in await_or_execute
+[limelight_publisher-1]     return callback(*args)
+[limelight_publisher-1]            ^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/python3.12/site-packages/limelight_perception/limelight_publisher.py", line 332, in loop
+[limelight_publisher-1]     self.handle_cone_scan()
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/python3.12/site-packages/limelight_perception/limelight_publisher.py", line 257, in handle_cone_scan
+[limelight_publisher-1]     switched = self.switch_pipeline(self.PIPE_CONE)
+[limelight_publisher-1]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/python3.12/site-packages/limelight_perception/limelight_publisher.py", line 131, in switch_pipeline
+[limelight_publisher-1]     self.ll.pipeline_switch(index)
+[limelight_publisher-1]   File "/home/igvc/.local/lib/python3.12/site-packages/limelight.py", line 103, in pipeline_switch
+[limelight_publisher-1]     return requests.post(f"{self.base_url}/pipeline-switch", params=params)
+[limelight_publisher-1]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/requests/api.py", line 115, in post
+[limelight_publisher-1]     return request("post", url, data=data, json=json, **kwargs)
+[limelight_publisher-1]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/requests/api.py", line 59, in request
+[limelight_publisher-1]     return session.request(method=method, url=url, **kwargs)
+[limelight_publisher-1]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/requests/sessions.py", line 589, in request
+[limelight_publisher-1]     resp = self.send(prep, **send_kwargs)
+[limelight_publisher-1]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/requests/sessions.py", line 703, in send
+[limelight_publisher-1]     r = adapter.send(request, **kwargs)
+[limelight_publisher-1]         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/usr/lib/python3/dist-packages/requests/adapters.py", line 519, in send
+[limelight_publisher-1]     raise ConnectionError(e, request=request)
+[limelight_publisher-1] requests.exceptions.ConnectionError: HTTPConnectionPool(host='limelight.local', port=5807): Max retries exceeded with url: /pipeline-switch?index=0 (Caused by NameResolutionError("<urllib3.connection.HTTPConnection object at 0xffff89339d30>: Failed to resolve 'limelight.local' ([Errno -2] Name or service not known)"))
+[ERROR] [limelight_publisher-1]: process has died [pid 3306, exit code 1, cmd '/home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher --ros-args -r __node:=limelight_publisher --params-file /home/igvc/sick_scan_ws/install/limelight_perception/share/limelight_perception/config/params.yaml'].
