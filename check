@@ -1,0 +1,14 @@
+igvc@IGVC:~/sick_scan_ws$ grep -n "create_publisher" ~/sick_scan_ws/install/limelight_perception/lib/python3.12/site-packages/limelight_perception/limelight_publisher.py
+64:        self.stop_pub = self.create_publisher(Bool, '/limelight/stop_sign_detected', 10)
+65:        self.cone_pub = self.create_publisher(Bool, '/limelight/cone_detected', 10)
+66:        self.lane_visible_pub = self.create_publisher(Bool, '/limelight/lane_visible', 10)
+67:        self.lane_error_pub = self.create_publisher(Float32, '/limelight/lane_error', 10)
+68:        self.active_pipeline_pub = self.create_publisher(Int32, '/limelight/active_pipeline', 10)
+69:        self.state_pub = self.create_publisher(String, '/limelight/state', 10)
+71:        self.stop_tx_pub = self.create_publisher(Float32, '/limelight/stop_sign_tx', 10)
+72:        self.stop_ta_pub = self.create_publisher(Float32, '/limelight/stop_sign_ta', 10)
+73:        self.cone_tx_pub = self.create_publisher(Float32, '/limelight/cone_tx', 10)
+74:        self.cone_ta_pub = self.create_publisher(Float32, '/limelight/cone_ta', 10)
+76:        self.debug_pub = self.create_publisher(String, '/limelight/debug_summary', 10)
+igvc@IGVC:~/sick_scan_ws$ grep -n "create publisher" ~/sick_scan_ws/src/limelight_perception/limelight_perception/limelight_publisher.py
+igvc@IGVC:~/sick_scan_ws$ 
