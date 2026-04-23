@@ -1,0 +1,16 @@
+igvc@IGVC:~/sick_scan_ws$ ros2 launch limelight_perception bringup.launch.py
+[INFO] [launch]: All log files can be found below /home/igvc/.ros/log/2026-04-22-20-31-19-485579-IGVC-8821
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [limelight_publisher-1]: process started with pid [8824]
+[limelight_publisher-1] Traceback (most recent call last):
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher", line 33, in <module>
+[limelight_publisher-1]     sys.exit(load_entry_point('limelight-perception==0.0.1', 'console_scripts', 'limelight_publisher')())
+[limelight_publisher-1]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/python3.12/site-packages/limelight_perception/limelight_publisher.py", line 179, in main
+[limelight_publisher-1]     node = LimelightPublisher()
+[limelight_publisher-1]            ^^^^^^^^^^^^^^^^^^^^
+[limelight_publisher-1]   File "/home/igvc/sick_scan_ws/install/limelight_perception/lib/python3.12/site-packages/limelight_perception/limelight_publisher.py", line 63, in __init__
+[limelight_publisher-1]     self.timer = self.create_timer(0.05, self.loop)
+[limelight_publisher-1]                                          ^^^^^^^^^
+[limelight_publisher-1] AttributeError: 'LimelightPublisher' object has no attribute 'loop'
+[ERROR] [limelight_publisher-1]: process has died [pid 8824, exit code 1, cmd '/home/igvc/sick_scan_ws/install/limelight_perception/lib/limelight_perception/limelight_publisher --ros-args -r __node:=limelight_publisher --params-file /home/igvc/sick_scan_ws/install/limelight_perception/share/limelight_perception/config/params.yaml'].
