@@ -1,0 +1,354 @@
+#!/usr/bin/env python3
+
+import time
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import Bool, Float32, Int32, String
+
+import limelight
+import limelightresults
+
+
+class LimelightPublisher(Node):
+    def __init__(self):
+        super().__init__('limelight_publisher')
+
+        # ---------------- Parameters ----------------
+        self.declare_parameter('limelight_ip', '192.168.1.50')
+
+        self.declare_parameter('pipe_stop', 0)
+        self.declare_parameter('pipe_cone', 1)
+        self.declare_parameter('pipe_lane', 2)
+
+        self.declare_parameter('stop_min_area', 6.0)
+        self.declare_parameter('cone_min_area', 1.0)
+        self.declare_parameter('lane_min_area', 0.2)
+
+        self.declare_parameter('pipeline_settle_time', 0.15)
+        self.declare_parameter('timer_period', 0.05)
+
+        self.declare_parameter('stop_scan_interval', 0.40)
+        self.declare_parameter('cone_scan_interval', 0.30)
+        self.declare_parameter('lane_scan_interval', 0.10)
+
+        self.declare_parameter('debug_logging', True)
+        self.declare_parameter('debug_log_every_n_cycles', 10)
+
+        self.limelight_ip = str(self.get_parameter('limelight_ip').value)
+
+        self.PIPE_STOP = int(self.get_parameter('pipe_stop').value)
+        self.PIPE_CONE = int(self.get_parameter('pipe_cone').value)
+        self.PIPE_LANE = int(self.get_parameter('pipe_lane').value)
+
+        self.stop_min_area = float(self.get_parameter('stop_min_area').value)
+        self.cone_min_area = float(self.get_parameter('cone_min_area').value)
+        self.lane_min_area = float(self.get_parameter('lane_min_area').value)
+
+        self.pipeline_settle_time = float(self.get_parameter('pipeline_settle_time').value)
+        self.timer_period = float(self.get_parameter('timer_period').value)
+
+        self.stop_scan_interval = float(self.get_parameter('stop_scan_interval').value)
+        self.cone_scan_interval = float(self.get_parameter('cone_scan_interval').value)
+        self.lane_scan_interval = float(self.get_parameter('lane_scan_interval').value)
+
+        self.debug_logging = bool(self.get_parameter('debug_logging').value)
+        self.debug_log_every_n_cycles = int(self.get_parameter('debug_log_every_n_cycles').value)
+
+        # ---------------- Limelight connection ----------------
+        self.ll = limelight.Limelight(self.limelight_ip)
+        self.current_pipeline = None
+        self.last_pipeline_switch_time = 0.0
+
+        # ---------------- Publishers ----------------
+        self.stop_pub = self.create_publisher(Bool, '/limelight/stop_sign_detected', 10)
+        self.cone_pub = self.create_publisher(Bool, '/limelight/cone_detected', 10)
+        self.lane_visible_pub = self.create_publisher(Bool, '/limelight/lane_visible', 10)
+        self.lane_error_pub = self.create_publisher(Float32, '/limelight/lane_error', 10)
+        self.active_pipeline_pub = self.create_publisher(Int32, '/limelight/active_pipeline', 10)
+        self.state_pub = self.create_publisher(String, '/limelight/state', 10)
+
+        self.stop_tx_pub = self.create_publisher(Float32, '/limelight/stop_sign_tx', 10)
+        self.stop_ta_pub = self.create_publisher(Float32, '/limelight/stop_sign_ta', 10)
+        self.cone_tx_pub = self.create_publisher(Float32, '/limelight/cone_tx', 10)
+        self.cone_ta_pub = self.create_publisher(Float32, '/limelight/cone_ta', 10)
+
+        self.debug_pub = self.create_publisher(String, '/limelight/debug_summary', 10)
+
+        # ---------------- Scheduling ----------------
+        now = time.time()
+        self.last_stop_scan = now - self.stop_scan_interval
+        self.last_cone_scan = now - self.cone_scan_interval
+        self.last_lane_scan = now - self.lane_scan_interval
+
+        self.last_warn_time = 0.0
+        self.loop_count = 0
+
+        self.timer = self.create_timer(self.timer_period, self.loop)
+
+        self.get_logger().info(f'Limelight perception node started. IP={self.limelight_ip}')
+        self.get_logger().info(
+            f'Pipelines: stop={self.PIPE_STOP}, cone={self.PIPE_CONE}, lane={self.PIPE_LANE}'
+        )
+
+    # ---------------- Utility publishing ----------------
+    def publish_state(self, text: str):
+        msg = String()
+        msg.data = text
+        self.state_pub.publish(msg)
+
+    def publish_debug(self, text: str):
+        msg = String()
+        msg.data = text
+        self.debug_pub.publish(msg)
+
+    def publish_active_pipeline(self):
+        msg = Int32()
+        msg.data = int(self.current_pipeline) if self.current_pipeline is not None else -1
+        self.active_pipeline_pub.publish(msg)
+
+    def debug_log(self, text: str, every_cycle: bool = False):
+        if not self.debug_logging:
+            return
+        if every_cycle or self.loop_count % max(1, self.debug_log_every_n_cycles) == 0:
+            self.get_logger().info(text)
+
+    def throttled_warn(self, text: str, seconds: float = 1.0):
+        now = time.time()
+        if now - self.last_warn_time >= seconds:
+            self.get_logger().warn(text)
+            self.last_warn_time = now
+
+    # ---------------- Limelight helpers ----------------
+    def switch_pipeline(self, index: int) -> bool:
+        """
+        Switch pipeline if needed.
+        Returns True if a switch happened this call, False otherwise.
+        """
+        if self.current_pipeline == index:
+            return False
+
+        self.ll.pipeline_switch(index)
+        self.current_pipeline = index
+        self.last_pipeline_switch_time = time.time()
+        self.publish_active_pipeline()
+        self.debug_log(f'Switched to pipeline {index}', every_cycle=True)
+        return True
+
+    def pipeline_is_settled(self) -> bool:
+        return (time.time() - self.last_pipeline_switch_time) >= self.pipeline_settle_time
+
+    def get_results(self):
+        """
+        Uses REST get_results() and parses into GeneralResult.
+        The docs show parse_results() returning a GeneralResult with
+        validity, pipeline_id, detectorResults, retroResults, etc.
+        """
+        try:
+            raw = self.ll.get_results()
+            parsed = limelightresults.parse_results(raw)
+            return parsed
+        except Exception as e:
+            self.throttled_warn(f'Failed to read Limelight results: {e}')
+            return None
+
+    # ---------------- Perception helpers ----------------
+    def find_detector_match(self, results, keyword: str, min_area: float):
+        """
+        For NN pipelines. DetectorResult fields are documented as:
+        class_name, target_area, target_x_degrees, ...
+        """
+        if results is None:
+            return False, 0.0, 0.0, 'no_results'
+
+        detections = getattr(results, 'detectorResults', [])
+        if detections is None:
+            detections = []
+
+        labels_seen = []
+
+        for det in detections:
+            label = str(getattr(det, 'class_name', '')).lower()
+            area = float(getattr(det, 'target_area', 0.0))
+            tx = float(getattr(det, 'target_x_degrees', 0.0))
+            conf = float(getattr(det, 'confidence', 0.0))
+            labels_seen.append(f'{label}(a={area:.2f},tx={tx:.2f},c={conf:.2f})')
+
+            if keyword in label and area >= min_area:
+                return True, tx, area, ', '.join(labels_seen)
+
+        return False, 0.0, 0.0, ', '.join(labels_seen) if labels_seen else 'no_detections'
+
+    def lane_status(self, results):
+        """
+        For color/retroreflective-style lane pipeline.
+        Docs show retroResults entries with:
+        target_area, target_x_degrees, ...
+        """
+        if results is None:
+            return False, 0.0, 'no_results'
+
+        retro_results = getattr(results, 'retroResults', [])
+        valid = bool(getattr(results, 'validity', 0))
+
+        if retro_results:
+            best = max(
+                retro_results,
+                key=lambda r: float(getattr(r, 'target_area', 0.0))
+            )
+            area = float(getattr(best, 'target_area', 0.0))
+            tx = float(getattr(best, 'target_x_degrees', 0.0))
+            dbg = f'valid={valid}, retro_count={len(retro_results)}, best_area={area:.2f}, best_tx={tx:.2f}'
+
+            if valid and area >= self.lane_min_area:
+                return True, tx, dbg
+            return False, 0.0, dbg
+
+        dbg = f'valid={valid}, retro_count=0'
+        return False, 0.0, dbg
+
+    # ---------------- Topic output helpers ----------------
+    def publish_stop_outputs(self, found: bool, tx: float, area: float):
+        self.stop_pub.publish(Bool(data=found))
+        self.stop_tx_pub.publish(Float32(data=float(tx)))
+        self.stop_ta_pub.publish(Float32(data=float(area)))
+
+    def publish_cone_outputs(self, found: bool, tx: float, area: float):
+        self.cone_pub.publish(Bool(data=found))
+        self.cone_tx_pub.publish(Float32(data=float(tx)))
+        self.cone_ta_pub.publish(Float32(data=float(area)))
+
+    def publish_lane_outputs(self, visible: bool, error: float):
+        self.lane_visible_pub.publish(Bool(data=visible))
+        self.lane_error_pub.publish(Float32(data=float(error)))
+
+    # ---------------- Scan handlers ----------------
+    def handle_stop_scan(self):
+        switched = self.switch_pipeline(self.PIPE_STOP)
+        if switched:
+            return
+
+        if not self.pipeline_is_settled():
+            return
+
+        results = self.get_results()
+        found, tx, area, det_dbg = self.find_detector_match(results, 'stop', self.stop_min_area)
+
+        pipeline_id = getattr(results, 'pipeline_id', -1) if results is not None else -1
+        validity = getattr(results, 'validity', -1) if results is not None else -1
+
+        self.publish_stop_outputs(found, tx, area)
+        self.last_stop_scan = time.time()
+
+        summary = (
+            f'STOP scan | pipeline={pipeline_id} current={self.current_pipeline} '
+            f'valid={validity} found={found} tx={tx:.2f} area={area:.2f} '
+            f'detections=[{det_dbg}]'
+        )
+        self.publish_debug(summary)
+        self.debug_log(summary)
+
+        if found:
+            self.publish_state('STOP_SIGN_DETECTED')
+        else:
+            self.publish_state('STOP_SIGN_CLEAR')
+
+    def handle_cone_scan(self):
+        switched = self.switch_pipeline(self.PIPE_CONE)
+        if switched:
+            return
+
+        if not self.pipeline_is_settled():
+            return
+
+        results = self.get_results()
+        found, tx, area, det_dbg = self.find_detector_match(results, 'cone', self.cone_min_area)
+
+        pipeline_id = getattr(results, 'pipeline_id', -1) if results is not None else -1
+        validity = getattr(results, 'validity', -1) if results is not None else -1
+
+        self.publish_cone_outputs(found, tx, area)
+        self.last_cone_scan = time.time()
+
+        summary = (
+            f'CONE scan | pipeline={pipeline_id} current={self.current_pipeline} '
+            f'valid={validity} found={found} tx={tx:.2f} area={area:.2f} '
+            f'detections=[{det_dbg}]'
+        )
+        self.publish_debug(summary)
+        self.debug_log(summary)
+
+        if found:
+            self.publish_state('CONE_DETECTED')
+        else:
+            self.publish_state('CONE_CLEAR')
+
+    def handle_lane_scan(self):
+        switched = self.switch_pipeline(self.PIPE_LANE)
+        if switched:
+            return
+
+        if not self.pipeline_is_settled():
+            return
+
+        results = self.get_results()
+        visible, error, lane_dbg = self.lane_status(results)
+
+        pipeline_id = getattr(results, 'pipeline_id', -1) if results is not None else -1
+        validity = getattr(results, 'validity', -1) if results is not None else -1
+
+        self.publish_lane_outputs(visible, error)
+        self.last_lane_scan = time.time()
+
+        summary = (
+            f'LANE scan | pipeline={pipeline_id} current={self.current_pipeline} '
+            f'valid={validity} visible={visible} error={error:.2f} '
+            f'lane_dbg=[{lane_dbg}]'
+        )
+        self.publish_debug(summary)
+        self.debug_log(summary)
+
+        if visible:
+            self.publish_state('LANE_VISIBLE')
+        else:
+            self.publish_state('LANE_LOST')
+
+    # ---------------- Main scheduler ----------------
+    def loop(self):
+        self.loop_count += 1
+        now = time.time()
+
+        stop_due = (now - self.last_stop_scan) >= self.stop_scan_interval
+        cone_due = (now - self.last_cone_scan) >= self.cone_scan_interval
+        lane_due = (now - self.last_lane_scan) >= self.lane_scan_interval
+
+        # Priority: stop, then cone, then lane
+        # Only do one scan action per timer tick. This avoids thrashing pipelines.
+        if stop_due:
+            self.handle_stop_scan()
+            return
+
+        if cone_due:
+            self.handle_cone_scan()
+            return
+
+        if lane_due:
+            self.handle_lane_scan()
+            return
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = LimelightPublisher()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
