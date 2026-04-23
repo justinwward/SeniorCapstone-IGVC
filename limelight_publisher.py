@@ -71,14 +71,14 @@ class LimelightPublisher(Node):
         self.current_pipeline = index
         time.sleep(self.pipeline_settle_time)
 
-    def get_results(self):
-        try:
-            raw = self.ll.get_results()
-            parsed = parsed_result = limelightresults.parse_results(result)
-            return parsed
-        except Exception as e:
-            self.get_logger().warn(f'Failed to read Limelight: {e}')
-            return None
+def get_results(self):
+    try:
+        raw = self.ll.get_results()
+        parsed = limelightresults.parse_results(raw)
+        return parsed
+    except Exception as e:
+        self.get_logger().warn(f'Failed to read Limelight: {e}')
+        return None
 
     def publish_state(self, text: str):
         msg = String()
